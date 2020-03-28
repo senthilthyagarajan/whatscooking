@@ -2,7 +2,8 @@ library(shiny)
 library(tidyverse)
 library(DT)
 library(data.table)
-
+library(shinyalert)
+library(shinythemes)
 # testdata <- tibble::tribble(
 #   ~config,       ~construct, ~var,
 #   "alpha,beta", "This is line 1",   12,
@@ -21,28 +22,48 @@ testdata$website <- paste0("<a href='",testdata$url,"'>",testdata$url,"</a>")
 
 config <- unique(unlist(strsplit(as.character(testdata$ingredients), ",")))
 var <- unique(unlist(strsplit(as.character(testdata$cuisine), ",")))
+side_width <- 5
 
-ui <- fluidPage(
-  title = 'Selectize examples',
-  sidebarLayout(
-    sidebarPanel(
-      
-      selectizeInput(
-        'e2', '1.Select Ingredients', choices = config, multiple = TRUE
-      )
-      ,
-      selectizeInput(
-        'e3', '2. Select Cuisine', choices = var, multiple = FALSE
-      )
-    ),
-    mainPanel(width = 12,
-      # helpText('Output of the examples in the left:'),
-      # verbatimTextOutput('ex_out'),
-      DT::dataTableOutput("mytable")
-
-    )
-  )
+ui <- navbarPage(
+  "Whats Cooking ?",
+  tabPanel("Select your next Recipe",
+           sidebarLayout(position = "left",
+                         sidebarPanel(width = side_width,
+                                      selectizeInput(
+                                        'e2', '1.Select Ingredients', choices = config, multiple = TRUE
+                                      ),
+                                      hr(),
+                                      br(),
+                                      selectizeInput(
+                                        'e3', '2. Select Cuisine', choices = var, multiple = FALSE
+                                      )),
+                         mainPanel(
+                           width = 12 - side_width,
+                           wellPanel(
+                             textInput("text", label = h3("Please Enter You Name"))
+                           ),        
+                           wellPanel(
+                             textOutput("value")
+                           )
+                         )
+           ),
+           fluidRow(
+             column(12,
+                    DT::dataTableOutput("mytable")
+             )
+           )
+  ),
+  
+  tabPanel("About",
+           includeMarkdown("about.md"),
+           includeHTML("index.html")),
+  
+  tags$style(type = "text/css", "body {padding-top: 70px;}"),
+  theme = shinytheme("cosmo"),
+  position = "fixed-top"
+  
 )
+  
 
 server <- function(input, output) {
   # output$ex_out <- renderPrint({
@@ -52,8 +73,12 @@ server <- function(input, output) {
   #   a
   #   print(a)
   # })
+  output$value <- renderPrint({ input$text })
   
-
+  observeEvent(input$preview, {
+    # Show a simple modal
+    shinyalert(title = "Please Input Your Name", type = "input")
+  })
   output$mytable <- renderDataTable({
     
     
@@ -86,7 +111,16 @@ server <- function(input, output) {
       return(filter(r2,cuisine %in% input$e3))
     } else
       return(r2)
-  },escape = FALSE)
+  },escape = FALSE,extensions = 'Responsive',options = list(pageLength = 10, autoWidth = TRUE,
+                                                            dom  = 'tip',columnDefs = list(list(
+                                                              targets = 1,
+                                                              render = JS(
+                                                                "function(data, type, row, meta) {",
+                                                                "return type === 'display' && data.length > 125 ?",
+                                                                "'<span title=\"' + data + '\">' + data.substr(0, 125) + '...</span>' : data;",
+                                                                "}")
+                                                            ))), callback = JS('table.page(3).draw(false);'),
+  rownames= FALSE)
   
   # observeEvent(input$mytable_rows_selected,
   #              {
