@@ -4,17 +4,9 @@ library(DT)
 library(data.table)
 library(shinyalert)
 library(shinythemes)
-# testdata <- tibble::tribble(
-#   ~config,       ~construct, ~var,
-#   "alpha,beta", "This is line 1",   12,
-#   "beta,gamma,alpha", "This is line 2",   15,
-#   "delta,alpha,tetra", "This is line 3",   21,
-#   "quad,core ,delta", "This is line 4",   12,
-#   "alpha,gamma", "This is line 5",   12,
-#   "beta,core", "This is line 5",   11,
-#   "delta,quad,tetra", "This is line 5",   21,
-#   "quad,tetra", "This is line 5",   12
-# )
+library(readr)
+
+
 testdata <- read_csv("Yummly_Raw_Data.csv")
 testdata$config_split <- strsplit(testdata$ingredients,split = ",")
 testdata <- rowwise(testdata)
@@ -41,7 +33,7 @@ ui <- navbarPage(
                            width = 12 - side_width,
                            wellPanel(
                              textInput("text", label = h3("Please Enter You Name"))
-                           ),        
+                           ),
                            wellPanel(
                              textOutput("value")
                            )
@@ -53,17 +45,17 @@ ui <- navbarPage(
              )
            )
   ),
-  
+
   tabPanel("About",
            includeMarkdown("about.md"),
-           includeHTML("index.html")),
-  
-  tags$style(type = "text/css", "body {padding-top: 70px;}"),
-  theme = shinytheme("cosmo"),
-  position = "fixed-top"
-  
+           includeHTML("index.html"))
+
+  # tags$style(type = "text/css", "body {padding-top: 175px;}"),
+  # theme = shinytheme("cosmo"),
+  # position = "fixed-top"
+
 )
-  
+
 
 server <- function(input, output) {
   # output$ex_out <- renderPrint({
@@ -74,14 +66,14 @@ server <- function(input, output) {
   #   print(a)
   # })
   output$value <- renderPrint({ input$text })
-  
+
   observeEvent(input$preview, {
     # Show a simple modal
     shinyalert(title = "Please Input Your Name", type = "input")
   })
   output$mytable <- renderDataTable({
-    
-    
+
+
     mycars <- head(testdata)
     # browser()
     # if(isTruthy(input$e2))
@@ -89,7 +81,7 @@ server <- function(input, output) {
     #                     ~filter(testdata,
     #                             any(config_split==.)))
     #print(result)
-    
+
     if(isTruthy(input$e2))
     {result <- filter(testdata,
                       all(input$e2 %in% config_split)
@@ -121,14 +113,8 @@ server <- function(input, output) {
                                                                 "}")
                                                             ))), callback = JS('table.page(3).draw(false);'),
   rownames= FALSE)
-  
-  # observeEvent(input$mytable_rows_selected,
-  #              {
-  #                showModal(modalDialog(
-  #                  title = "You will be cooking",
-  #                  mycars[input$mytable_rows_selected,]
-  #                ))
-  #              })
+
+
 }
 
 shinyApp(ui = ui, server = server)
